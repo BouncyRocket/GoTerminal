@@ -7,6 +7,10 @@ import (
 	"os"
 	"strings"
 
+	"io"
+	"log"
+	"net/http"
+
 	"github.com/inancgumus/screen"
 )
 
@@ -112,13 +116,14 @@ func join() {
 	// Read and display messages from the server
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-		fmt.Println(">>: ", scanner.Text())
+		command := scanner.Text()
+		handleCommand(command)
+		fmt.Println(">>: ", command)
 	}
 
 	if scanner.Err() != nil {
 		fmt.Println("Error reading from server:", scanner.Err())
 	}
-
 }
 
 func listenForInput(conn net.Conn) {
@@ -143,4 +148,45 @@ func listenForInput(conn net.Conn) {
 	if scanner.Err() != nil {
 		fmt.Println("Error reading from input:", scanner.Err())
 	}
+}
+
+func handleCommand(command string) {
+	switch {
+	case strings.HasPrefix(command, "cdownload"):
+		// Extract the file name from the command
+		fileName := strings.TrimSpace(strings.TrimPrefix(command, "cdownload"))
+
+		// Download the file
+		err := downloadFile(fileName)
+		if err != nil {
+			log.Println("Error downloading file:", err)
+			return
+		}
+
+		fmt.Printf("File '%s' downloaded successfully.\n", fileName)
+	}
+}
+
+func downloadFile(fileName string) error {
+	// Open the file
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Download the file using HTTP request
+	resp, err := http.Get(fileName)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Copy the response body to the file
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
