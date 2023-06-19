@@ -6,15 +6,85 @@ import (
 	"net"
 	"os"
 	"strings"
+
+	"github.com/inancgumus/screen"
 )
 
-const (
-	ServerAddr = "192.168.3.20:8888" // Update this with your server address / put the server ip here / the server you wanta join
-	Password   = "(dont change this this is not for the password of the server but if remove this it crashes)"
-)
+var Ip = "global"
+var port = "global"
+
+const password = ""
 
 func main() {
-	conn, err := net.Dial("tcp", ServerAddr)
+	for {
+		screen.Clear()
+		showMenu()
+		option := readOption()
+		switch option {
+		case 1:
+			fmt.Println("Settings")
+			settingsMenu()
+		case 2:
+			fmt.Println("Join")
+			join()
+		case 3:
+			fmt.Println("Exit")
+			os.Exit(0)
+		default:
+			fmt.Println("Invalid option. Please try again.")
+		}
+	}
+}
+
+func showMenu() {
+	screen.Clear()
+	fmt.Println("=====")
+	fmt.Println("Menu")
+	fmt.Println("")
+	fmt.Println("Settings [1]")
+	fmt.Println("Join [2]")
+	fmt.Println("Exit [3]")
+	fmt.Print("\n>>: ")
+}
+
+func readOption() int {
+	var option int
+	fmt.Scanln(&option)
+	return option
+}
+
+func settingsMenu() {
+	screen.Clear()
+	fmt.Println("=====")
+	fmt.Println("Settings")
+	fmt.Println("")
+	fmt.Println("Ip [1]")
+	fmt.Println("Port [2]")
+	fmt.Println("Back [0]")
+	fmt.Print("\n>>: ")
+	option := readOption()
+	switch option {
+	case 1:
+		fmt.Print("Enter IP: ")
+		fmt.Scanln(&Ip) // Assign directly to the global variable Ip
+		screen.Clear()
+		settingsMenu()
+	case 2:
+		fmt.Print("Enter Port: ")
+		fmt.Scanln(&port) // Assign directly to the global variable port
+		screen.Clear()
+		settingsMenu()
+	case 0:
+		main()
+	default:
+		fmt.Println("Invalid option. Please try again.")
+		screen.Clear()
+		settingsMenu()
+	}
+}
+
+func join() {
+	conn, err := net.Dial("tcp", Ip+":"+port)
 	if err != nil {
 		fmt.Println("Error connecting to server:", err)
 		return
@@ -29,7 +99,7 @@ func main() {
 	}
 	password = strings.TrimSpace(password)
 
-	if password != Password {
+	if password != password {
 		fmt.Println("Invalid password")
 		return
 	}
@@ -42,12 +112,13 @@ func main() {
 	// Read and display messages from the server
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		fmt.Println(">>: ", scanner.Text())
 	}
 
 	if scanner.Err() != nil {
 		fmt.Println("Error reading from server:", scanner.Err())
 	}
+
 }
 
 func listenForInput(conn net.Conn) {

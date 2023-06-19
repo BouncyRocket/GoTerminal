@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"sync"
+
+	"github.com/inancgumus/screen"
 )
 
 type Client struct {
@@ -18,20 +21,91 @@ var (
 	mutex   sync.Mutex
 )
 
-const (
-	ServerAddress = "localhost:8888" // Update this with your server address / your Ip here
-	Password      = "mypassword"     // Update this with your desired password / for clients joining the server
-)
+var ipserver = "global"
+var portserver = "global"
+var passwordserver = "global"
 
 func main() {
-	listener, err := net.Listen("tcp", ServerAddress)
+	for {
+		screen.Clear()
+		showMenuserver()
+		option := readOptionserver()
+		switch option {
+		case 1:
+			fmt.Println("Settings")
+			settingsMenuserver()
+		case 2:
+			fmt.Println("Run")
+			Run()
+		case 3:
+			fmt.Println("Exit")
+			os.Exit(0)
+		default:
+			fmt.Println("Invalid option. Please try again.")
+		}
+	}
+}
+
+func showMenuserver() {
+	screen.Clear()
+	fmt.Println("=====")
+	fmt.Println("Menu")
+	fmt.Println("")
+	fmt.Println("Settings [1]")
+	fmt.Println("Run [2]")
+	fmt.Println("Exit [3]")
+	fmt.Print("\n>>: ")
+}
+
+func readOptionserver() int {
+	var option int
+	fmt.Scanln(&option)
+	return option
+}
+
+func settingsMenuserver() {
+	screen.Clear()
+	fmt.Println("=====")
+	fmt.Println("Settings")
+	fmt.Println("")
+	fmt.Println("Ip [1]")
+	fmt.Println("Port [2]")
+	fmt.Println("Password [3]")
+	fmt.Println("Back [0]")
+	fmt.Print("\n>>: ")
+	option := readOptionserver()
+	switch option {
+	case 1:
+		fmt.Print("Enter IP: ")
+		fmt.Scanln(&ipserver)
+		settingsMenuserver()
+	case 2:
+		fmt.Print("Enter Port: ")
+		fmt.Scanln(&portserver)
+		screen.Clear()
+		settingsMenuserver()
+	case 3:
+		fmt.Print("Enter Password: ")
+		fmt.Scanln(&passwordserver)
+		screen.Clear()
+		settingsMenuserver()
+	case 0:
+		return
+	default:
+		fmt.Println("Invalid option. Please try again.")
+		settingsMenuserver()
+	}
+}
+
+func Run() {
+	listener, err := net.Listen("tcp", ipserver+":"+portserver)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
 	defer listener.Close()
 
-	fmt.Println("Server listening on " + ServerAddress)
+	fmt.Println("Server listening on " + ipserver + ":" + portserver)
 
 	for {
 		conn, err := listener.Accept()
@@ -55,7 +129,7 @@ func handleConnection(conn net.Conn) {
 	}
 	password = strings.TrimSpace(password)
 
-	if password != Password {
+	if password != passwordserver {
 		_, err := conn.Write([]byte("Invalid password. Disconnecting...\n"))
 		if err != nil {
 			fmt.Println("Error writing to client:", err)
@@ -124,6 +198,7 @@ func broadcastMessage(message string, sender net.Conn) {
 	for conn, client := range clients {
 		if conn != sender {
 			_, err := conn.Write([]byte(message + "\n"))
+			fmt.Println(message + "\n")
 			if err != nil {
 				fmt.Printf("Error broadcasting message to client [%s]: %s\n", client.username, err)
 			}
