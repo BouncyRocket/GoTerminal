@@ -178,8 +178,25 @@ func handleConnection(conn net.Conn) {
 			break
 		}
 
-		message = fmt.Sprintf("[%s]: %s", client.username, strings.TrimSpace(message))
-		broadcastMessage(message, conn)
+		message = strings.TrimSpace(message)
+
+		if strings.HasPrefix(message, "?") {
+			// Ignore the command if it starts with "?#"
+			if strings.HasPrefix(message, "?#") {
+				continue
+			}
+
+			// Handle other commands here
+			if strings.HasPrefix(message, "?kick ") {
+				username := strings.TrimSpace(strings.TrimPrefix(message, "?kick "))
+				kickUser(username)
+			}
+			// Add more commands as needed
+		}
+
+		// Broadcast regular messages to clients
+		formattedMessage := fmt.Sprintf("[%s]: %s", client.username, message)
+		broadcastMessage(formattedMessage, conn)
 	}
 
 	// Remove the client from the clients map and notify others
@@ -204,4 +221,22 @@ func broadcastMessage(message string, sender net.Conn) {
 			}
 		}
 	}
+}
+
+func kickUser(username string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	for conn, client := range clients {
+		if client.username == username {
+			conn.Close()
+			delete(clients, conn)
+			broadcastMessage(fmt.Sprintf("User %s has been kicked by the server", username), nil)
+			fmt.Printf("User %s has been kicked by the server\n", username)
+			return
+		}
+	}
+
+	fmt.Printf("User %s not found\n", username)
+	broadcastMessage(fmt.Sprintf("User %s not found", username), nil)
 }

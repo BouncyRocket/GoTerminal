@@ -3,13 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strings"
-
-	"io"
-	"log"
-	"net/http"
 
 	"github.com/inancgumus/screen"
 )
@@ -45,15 +42,18 @@ func showMenu() {
 	fmt.Println("=====")
 	fmt.Println("Menu")
 	fmt.Println("")
-	fmt.Println("Settings [1]")
-	fmt.Println("Join [2]")
-	fmt.Println("Exit [3]")
+	fmt.Println("1. Settings")
+	fmt.Println("2. Join")
+	fmt.Println("3. Exit")
 	fmt.Print("\n>>: ")
 }
 
 func readOption() int {
 	var option int
-	fmt.Scanln(&option)
+	_, err := fmt.Scanln(&option)
+	if err != nil {
+		log.Println("Error reading option:", err)
+	}
 	return option
 }
 
@@ -62,9 +62,9 @@ func settingsMenu() {
 	fmt.Println("=====")
 	fmt.Println("Settings")
 	fmt.Println("")
-	fmt.Println("Ip [1]")
-	fmt.Println("Port [2]")
-	fmt.Println("Back [0]")
+	fmt.Println("1. IP")
+	fmt.Println("2. Port")
+	fmt.Println("0. Back")
 	fmt.Print("\n>>: ")
 	option := readOption()
 	switch option {
@@ -116,9 +116,8 @@ func join() {
 	// Read and display messages from the server
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-		command := scanner.Text()
-		handleCommand(command)
-		fmt.Println(">>: ", command)
+		message := scanner.Text()
+		log.Println("[Server]:", message)
 	}
 
 	if scanner.Err() != nil {
@@ -135,58 +134,17 @@ func listenForInput(conn net.Conn) {
 
 		_, err := writer.WriteString(message + "\n")
 		if err != nil {
-			fmt.Println("Error writing to server:", err)
+			log.Println("Error writing to server:", err)
 			break
 		}
 		err = writer.Flush()
 		if err != nil {
-			fmt.Println("Error flushing writer:", err)
+			log.Println("Error flushing writer:", err)
 			break
 		}
 	}
 
 	if scanner.Err() != nil {
-		fmt.Println("Error reading from input:", scanner.Err())
+		log.Println("Error reading from input:", scanner.Err())
 	}
-}
-
-func handleCommand(command string) {
-	switch {
-	case strings.HasPrefix(command, "cdownload"):
-		// Extract the file name from the command
-		fileName := strings.TrimSpace(strings.TrimPrefix(command, "cdownload"))
-
-		// Download the file
-		err := downloadFile(fileName)
-		if err != nil {
-			log.Println("Error downloading file:", err)
-			return
-		}
-
-		fmt.Printf("File '%s' downloaded successfully.\n", fileName)
-	}
-}
-
-func downloadFile(fileName string) error {
-	// Open the file
-	file, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Download the file using HTTP request
-	resp, err := http.Get(fileName)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Copy the response body to the file
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
