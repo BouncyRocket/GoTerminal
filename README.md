@@ -13,5 +13,3 @@ Go build serverneco.go
 Go build clientneco.go
 "
 and thats you done have fun
-
-dad was here
